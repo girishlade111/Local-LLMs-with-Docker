@@ -3,121 +3,521 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Run LLMs Locally with Docker: An Interactive Guide</title>
-            <h1 class="mt-4 text-4xl md:text-6xl font-bold tracking-tight text-stone-800">Run LLMs Locally with Docker</h1>
-            <div class="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                <div class="p-6 bg-white rounded-xl shadow-lg border border-stone-200">
-                    <div class="text-4xl">🔒</div>
-                    <h3 class="mt-4 text-xl font-semibold">Total Privacy</h3>
-                    <p class="mt-2 text-stone-600">Your data and prompts never leave your machine. Perfect for sensitive information and confidential work.</p>
-                </div>
-                <div class="p-6 bg-white rounded-xl shadow-lg border border-stone-200">
-                     <div class="text-4xl">💰</div>
-                    <h3 class="mt-4 text-xl font-semibold">No Subscriptions</h3>
-                    <p class="mt-2 text-stone-600">Avoid recurring fees and API costs. Run models as much as you want after the initial setup.</p>
-                </div>
-                <div class="p-6 bg-white rounded-xl shadow-lg border border-stone-200">
-                     <div class="text-4xl">🔌</div>
-                    <h3 class="mt-4 text-xl font-semibold">Offline Access</h3>
-                    <p class="mt-2 text-stone-600">Your AI assistant works without an internet connection, ensuring constant availability.</p>
-                </div>
-                 <div class="p-6 bg-white rounded-xl shadow-lg border border-stone-200">
-                     <div class="text-4xl">🛠️</div>
-                    <h3 class="mt-4 text-xl font-semibold">Deep Customization</h3>
-                    <p class="mt-2 text-stone-600">Fine-tune models with your own data and experiment with different configurations and parameters freely.</p>
-                </div>
-            </div>
-        </section>
+    <title>The Ultimate Guide to Local LLMs with Docker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Amber & Stone -->
+    <!-- Application Structure Plan: The application uses a simulated multi-page site structure to organize a vast amount of in-depth information. This structure (Home, Why Local?, Hardware & Models, Setup Guide, Advanced Topics) is crucial for usability, allowing users to navigate directly to their area of interest without facing an overwhelming wall of text. The design prioritizes readability for long-form technical content. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: In-depth technical concepts (Quantization, Hardware Roles, Fine-tuning) -> Goal: Inform/Educate -> Viz: Long-form text structured with headings, lists, tables, and code blocks (Tailwind Prose class for readability) -> Interaction: Accordion for progressive disclosure on the advanced page -> Justification: Complex topics require detailed explanation that cannot be reduced to a simple chart. The structure makes the information digestible.
+        - Report Info: Hardware VRAM Requirements -> Goal: Compare/Personalize -> Viz: Interactive buttons & Bar Chart (Chart.js) -> Interaction: User clicks VRAM buttons to filter chart/model list -> Justification: Retained as the core interactive element; it provides immediate, personalized value by translating complex hardware requirements into actionable choices.
+        - Report Info: Local vs. Cloud Comparison -> Goal: Compare -> Viz: Expanded comparison table -> Justification: Offers a quick, scannable reference that contrasts the two paradigms across a wider range of technical and business criteria.
+        - Library/Method: Chart.js for visualization, custom vanilla JS for multi-page simulation and interactivity. Tailwind's `prose` plugin is essential for formatting the extensive text content. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fefce8; /* amber-50 */
+            color: #44403c; /* stone-700 */
+        }
+        .code-block {
+            background-color: #1c1917; /* stone-900 */
+            color: #f5f5f4; /* stone-100 */
+            border-radius: 0.5rem;
+            padding: 1rem;
+            font-family: monospace;
+            position: relative;
+            overflow-x: auto;
+        }
+        .copy-button {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background-color: #a8a29e; /* stone-400 */
+            color: #1c1917; /* stone-900 */
+            border: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: background-color 0.2s;
+        }
+        .copy-button:hover {
+            background-color: #78716c; /* stone-500 */
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 400px;
+            max-height: 60vh;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 500px;
+            }
+        }
+        .nav-item {
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        .nav-item.active {
+            background-color: #f97316; /* orange-500 */
+            color: white;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .nav-item:not(.active):hover {
+            background-color: #fde68a; /* amber-200 */
+        }
+        .page-content {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .prose h2 {
+            font-size: 1.875rem;
+            line-height: 2.25rem;
+            margin-top: 2em;
+            margin-bottom: 1em;
+            font-weight: 700;
+        }
+        .prose h3 {
+            font-size: 1.5rem;
+            line-height: 2rem;
+            margin-top: 1.6em;
+            margin-bottom: 0.8em;
+            font-weight: 600;
+        }
+        .prose p, .prose ul, .prose ol, .prose blockquote {
+            line-height: 1.75;
+        }
+    </style>
+</head>
+<body class="antialiased">
 
-        <section id="hardware" class="mt-20 md:mt-28 scroll-mt-20">
-             <div class="text-center">
-                <h2 class="text-3xl md:text-4xl font-bold text-stone-800">Hardware Check: What Can You Run?</h2>
-                <p class="mt-4 max-w-2xl mx-auto text-lg text-stone-600">The most important factor for running LLMs is your GPU's Video RAM (VRAM). Select your available VRAM below to see which models are a good fit for your system. If you don't have a dedicated GPU, select "&lt; 8 GB" to see CPU-compatible models.</p>
-            </div>
-            <div id="vram-selector" class="mt-12 flex flex-wrap justify-center gap-4">
-                <button data-vram="8" class="vram-btn px-6 py-3 text-lg font-semibold bg-white border-2 border-stone-300 rounded-lg shadow-sm transition-all duration-200 hover:border-orange-500 hover:shadow-md"> &lt; 8 GB</button>
-                <button data-vram="16" class="vram-btn px-6 py-3 text-lg font-semibold bg-white border-2 border-stone-300 rounded-lg shadow-sm transition-all duration-200 hover:border-orange-500 hover:shadow-md">8-16 GB</button>
-                <button data-vram="24" class="vram-btn px-6 py-3 text-lg font-semibold bg-white border-2 border-stone-300 rounded-lg shadow-sm transition-all duration-200 hover:border-orange-500 hover:shadow-md">16-24 GB</button>
-                <button data-vram="Infinity" class="vram-btn px-6 py-3 text-lg font-semibold bg-white border-2 border-stone-300 rounded-lg shadow-sm transition-all duration-200 hover:border-orange-500 hover:shadow-md">24+ GB</button>
-            </div>
-        </section>
+    <header class="sticky top-0 z-50 bg-amber-50/80 backdrop-blur-lg border-b border-amber-200">
+        <nav class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <ul class="flex items-center justify-center flex-wrap gap-2 md:gap-4 text-sm md:text-base">
+                <li><button data-page="home" class="nav-item active">Home</button></li>
+                <li><button data-page="why" class="nav-item">Why Local?</button></li>
+                <li><button data-page="hardware" class="nav-item">Hardware & Models</button></li>
+                <li><button data-page="guide" class="nav-item">Setup Guide</button></li>
+                <li><button data-page="advanced" class="nav-item">Advanced Topics</button></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
         
-        <section id="models" class="mt-20 md:mt-28 scroll-mt-20">
-             <div class="text-center">
-                <h2 class="text-3xl md:text-4xl font-bold text-stone-800">Choose Your Model</h2>
-                <p class="mt-4 max-w-2xl mx-auto text-lg text-stone-600">Based on your hardware, here are some popular open-source models. The chart shows the minimum VRAM required for a smooth experience. Smaller models are faster and great for general tasks, while larger models offer more powerful reasoning.</p>
-            </div>
-            <div class="mt-12">
-                <div class="chart-container">
-                    <canvas id="modelChart"></canvas>
+        <div id="page-home" class="page-content">
+            <section class="text-center">
+                <span class="inline-block px-4 py-1 text-sm font-semibold tracking-wider text-orange-700 bg-orange-100 rounded-full">The Ultimate Guide</span>
+                <h1 class="mt-4 text-4xl md:text-6xl font-bold tracking-tight text-stone-800">Run LLMs Locally with Docker</h1>
+                <p class="mt-6 max-w-3xl mx-auto text-lg md:text-xl text-stone-600">Unlock the unparalleled power of Large Language Models on your own hardware. This comprehensive guide provides everything you need to know, from foundational concepts to advanced deployment, using open-source AI models and Docker for ultimate privacy, performance, and control.</p>
+                 <div class="mt-8 flex justify-center gap-4">
+                    <button data-page-target="guide" class="page-changer-btn px-8 py-3 text-lg font-semibold text-white bg-orange-500 rounded-lg shadow-md hover:bg-orange-600 transition-all">Start the Guide</button>
+                    <button data-page-target="why" class="page-changer-btn px-8 py-3 text-lg font-semibold bg-white border-2 border-stone-300 rounded-lg shadow-sm hover:border-orange-500 transition-all">Explore the "Why"</button>
                 </div>
-            </div>
-            <div id="model-list" class="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            </div>
-        </section>
+            </section>
+            <section class="mt-20 text-left max-w-4xl mx-auto">
+                 <div class="prose max-w-none prose-stone">
+                    <h2>Who Is This Guide For?</h2>
+                    <p>This guide is designed for a wide audience, from curious beginners to seasoned developers. Whether you're looking to protect your privacy or build the next great AI application, you'll find valuable information here.</p>
+                    <ul>
+                        <li><strong>For the Privacy-Conscious Individual:</strong> Learn how to use powerful AI tools without sending your personal or professional data to third-party companies.</li>
+                        <li><strong>For Developers & Engineers:</strong> Get a robust foundation for integrating local LLMs into your applications, enabling offline functionality, reducing API costs, and creating novel AI-powered features.</li>
+                        <li><strong>For Researchers & Academics:</strong> Understand how to create a controlled, repeatable environment for experimenting with different models, parameters, and fine-tuning techniques.</li>
+                        <li><strong>For AI Enthusiasts & Hobbyists:</strong> Dive deep into the exciting world of open-source AI. This guide gives you the practical skills to run, test, and compare the latest models on your own machine.</li>
+                    </ul>
+                    <h2>What You'll Learn</h2>
+                    <p>By the end of this guide, you will have a thorough understanding of the entire local LLM ecosystem:</p>
+                    <ol>
+                        <li><strong>The Strategic Advantages:</strong> A deep dive into why running LLMs locally is a game-changer for privacy, cost, and control, including a detailed economic analysis.</li>
+                        <li><strong>Hardware Demystified:</strong> A complete breakdown of the hardware you need, explaining the critical roles of GPU VRAM, system RAM, and CPU, and helping you assess your own system's capabilities.</li>
+                        <li><strong>The Model Landscape:</strong> An exploration of popular open-source models and the different file formats you'll encounter, enabling you to choose the right tool for the job.</li>
+                        <li><strong>Step-by-Step Deployment:</strong> A foolproof, copy-paste-ready guide to getting your first LLM running in minutes using the power and simplicity of Docker and Ollama.</li>
+                        <li><strong>Advanced Concepts:</strong> An introduction to powerful techniques like model quantization to save resources, API interaction for application development, and the concepts behind fine-tuning to create specialized models.</li>
+                    </ol>
+                 </div>
+            </section>
+        </div>
 
-        <section id="guide" class="mt-20 md:mt-28 scroll-mt-20">
-            <div class="text-center">
-                <h2 class="text-3xl md:text-4xl font-bold text-stone-800">The 4-Step Setup Guide</h2>
-                <p class="mt-4 max-w-2xl mx-auto text-lg text-stone-600">We'll use <a href="https://ollama.com" target="_blank" class="text-orange-600 font-semibold hover:underline">Ollama</a>, a fantastic tool that simplifies running LLMs. It packages everything you need into a single Docker container.</p>
-            </div>
-            <div class="mt-12 max-w-4xl mx-auto space-y-12">
-                <div class="flex items-start gap-6">
-                    <div class="flex-shrink-0 text-3xl font-bold text-orange-500 bg-orange-100 rounded-full h-12 w-12 flex items-center justify-center">1</div>
-                    <div class="flex-1">
-                        <h3 class="text-2xl font-semibold">Install Docker</h3>
-                        <p class="mt-2 text-stone-600">If you don't have it already, download and install Docker Desktop for your operating system. It provides the containerization engine needed to run Ollama.</p>
-                        <a href="https://www.docker.com/products/docker-desktop/" target="_blank" class="inline-block mt-3 px-4 py-2 text-white bg-orange-500 rounded-lg font-semibold hover:bg-orange-600 transition-colors">Get Docker Desktop →</a>
+        <div id="page-why" class="page-content hidden prose max-w-none prose-stone">
+            <section>
+                <div class="text-center">
+                    <h1 class="text-3xl md:text-4xl font-bold text-stone-800">The Strategic Imperative: Why Run LLMs Locally?</h1>
+                    <p class="mt-4 text-lg">In an era dominated by cloud-first solutions, the decision to run Large Language Models on local hardware is not just a technical choice—it's a strategic one. This section explores the profound advantages of this approach, moving beyond surface-level benefits to uncover the deep impact on privacy, economics, innovation, and digital sovereignty.</p>
+                </div>
+                
+                <h2>1. Absolute Data Sovereignty and Unbreakable Privacy</h2>
+                <p>This is the most compelling reason for running LLMs locally. When you use a cloud-based AI service (like ChatGPT, Claude, or Gemini), every prompt you send, every piece of data you input, and every conversation you have is transmitted to and processed on servers owned by a third party. This creates inherent risks:</p>
+                <ul>
+                    <li><strong>Data Exposure:</strong> Your data is susceptible to breaches, unauthorized access by company employees, or government subpoenas. While providers have strong security measures, the risk is never zero.</li>
+                    <li><strong>Training on Your Data:</strong> Many services reserve the right to use your (anonymized) conversations to train their future models. For businesses, this is an unacceptable risk of leaking proprietary information, trade secrets, or strategic plans.</li>
+                    <li><strong>Compliance Nightmares:</strong> Industries with strict data residency and privacy regulations (like healthcare with HIPAA, finance with GLBA, or any business operating under GDPR in Europe) may find it impossible to use cloud AI for core operations involving sensitive data.</li>
+                </ul>
+                <p>A local LLM eradicates these risks entirely. The model, the data, and the processing all occur within your own secure environment. <strong>Your data never leaves your machine.</strong> This enables use cases that are simply impossible with public cloud services, such as analyzing confidential legal documents, reviewing sensitive patient data, or developing code for unannounced products.</p>
+                
+
+                <h2>2. The Compelling Economics of Local AI</h2>
+                <p>The pay-per-use model of cloud APIs seems convenient, but costs can quickly spiral out of control for any application with significant usage. The Total Cost of Ownership (TCO) for a local setup is often dramatically lower over the long term.</p>
+                <h3>Cloud API Cost Analysis: The Meter is Always Running</h3>
+                <p>API costs are typically based on "tokens," which are pieces of words. A typical pricing model might be $0.50 per million input tokens and $1.50 per million output tokens for a capable model. This seems cheap, but consider a moderately active application:</p>
+                <blockquote>
+                    An internal customer support chatbot for a team of 50 people. Each person makes 30 queries per day, with an average of 1,000 tokens per query (prompt + response).
+                    <br>
+                    <em>50 users * 30 queries/day * 1,000 tokens/query = 1,500,000 tokens per day.</em>
+                    <br>
+                    Assuming an average cost of $1.00 per million tokens, that's $1.50 per day.
+                    <br>
+                    <em>$1.50/day * 30 days = $45 per month.</em>
+                    <br>
+                    For a larger company of 1000 employees, this becomes <strong>$900 per month, or $10,800 per year</strong>, for just one specific, moderately used application.
+                </blockquote>
+                <h3>Local LLM Cost Analysis: Invest Once, Run Forever</h3>
+                <p>The primary cost of a local setup is the initial hardware investment. A capable GPU for running powerful 7B to 8B models (like an NVIDIA RTX 4070) costs around $550. A full PC build around it might be $1500. This is a one-time capital expenditure.</p>
+                <ul>
+                    <li><strong>API Fees:</strong> $0.</li>
+                    <li><strong>Subscription Costs:</strong> $0.</li>
+                    <li><strong>Usage Limits:</strong> None. You can run the model 24/7 at maximum capacity.</li>
+                </ul>
+                <p>The only ongoing cost is electricity. A powerful GPU under full load might consume 250W. Running it for 8 hours a day at an electricity cost of $0.15/kWh would be approximately $0.30 per day, or $9 per month. For the 1000-employee company in the example above, the choice is between $900/month in API fees or a one-time $1500 hardware cost and negligible electricity usage. The hardware pays for itself in less than two months.</p>
+
+                <h2>3. Unparalleled Control, Customization, and Innovation</h2>
+                <p>When you use a cloud API, you are a consumer. When you run an LLM locally, you become a creator. You gain granular control over the entire AI stack, which unlocks a vast potential for innovation.</p>
+                <ul>
+                    <li><strong>Model Freedom:</strong> You are not locked into a single provider's ecosystem. You can instantly switch between models from Meta, Mistral, Google, and the wider open-source community to find the perfect fit for your task without changing your application architecture.</li>
+                    <li><strong>Parameter Tuning:</strong> You have direct access to the model's inference parameters. You can adjust the temperature to make responses more creative or more deterministic, change the Top-P and Top-K sampling to control randomness, and modify repetition penalties to fine-tune the output style.</li>
+                    <li><strong>System Prompts and Templating:</strong> You can bake in complex system prompts and role-playing instructions directly into your setup, ensuring the model always behaves according to a specific persona or follows a strict set of rules—something that is often limited or filtered by commercial providers.</li>
+                    <li><strong>Fine-Tuning:</strong> This is the ultimate form of customization. You can take a powerful base model and continue its training on your own proprietary dataset. This allows you to create models that are highly specialized experts in your domain, speak in your brand's voice, or understand your company's internal jargon. This is a powerful competitive advantage that is difficult and expensive to achieve with cloud APIs.</li>
+                </ul>
+
+                <h2>4. Performance, Reliability, and Offline Capability</h2>
+                <p>Cloud services are subject to factors outside your control.</p>
+                <ul>
+                    <li><strong>Network Latency:</strong> Every API call involves a round trip over the internet. This adds latency that can make real-time applications feel sluggish. Local inference speed is limited only by your hardware, often resulting in near-instantaneous responses for smaller models.</li>
+                    <li><strong>Provider Downtime:</strong> If the API provider has an outage, your application stops working. A local model is always available.</li>
+                    <li><strong>Censorship and Filtering:</strong> Commercial models often have heavy filtering and refusal behaviors that can interfere with legitimate use cases, such as creative writing or security research. Local open-source models give you the freedom to set your own ethical boundaries.</li>
+                    <li><strong>True Offline Functionality:</strong> A local LLM requires no internet connection to run. This is critical for applications used in environments with intermittent or no connectivity, such as on airplanes, in remote field locations, or in highly secure "air-gapped" facilities.</li>
+                </ul>
+
+                <h3>Local vs. Cloud API: A Head-to-Head Comparison</h3>
+                <div class="mt-8 overflow-x-auto bg-white rounded-lg shadow-lg border border-stone-200 not-prose">
+                    <table class="w-full text-left">
+                        <thead class="bg-stone-50 border-b border-stone-200">
+                            <tr>
+                                <th class="p-4 font-semibold">Feature</th>
+                                <th class="p-4 font-semibold text-green-700">Local LLM</th>
+                                <th class="p-4 font-semibold text-blue-700">Cloud API</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-stone-200">
+                            <tr><td class="p-4 font-medium">Privacy</td><td class="p-4">Maximum; 100% data sovereignty.</td><td class="p-4">Data sent to a third party; potential for exposure or use in training.</td></tr>
+                            <tr><td class="p-4 font-medium">Cost Model</td><td class="p-4">One-time hardware CAPEX, near-zero OPEX.</td><td class="p-4">Ongoing OPEX (pay-per-use or subscription).</td></tr>
+                            <tr><td class="p-4 font-medium">Performance</td><td class="p-4">Limited by local hardware. Very low latency.</td><td class="p-4">Access to massive, SOTA models. Subject to network latency.</td></tr>
+                            <tr><td class="p-4 font-medium">Customization</td><td class="p-4">Total control over model choice, parameters, and fine-tuning.</td><td class="p-4">Limited to what the API exposes.</td></tr>
+                            <tr><td class="p-4 font-medium">Reliability</td><td class="p-4">Always available, works offline.</td><td class="p-4">Dependent on internet connection and provider uptime.</td></tr>
+                            <tr><td class="p-4 font-medium">Censorship</td><td class="p-4">None; user-defined ethical boundaries.</td><td class="p-4">Often heavily filtered and moderated by the provider.</td></tr>
+                            <tr><td class="p-4 font-medium">Scalability</td><td class="p-4">Requires purchasing more hardware.</td><td class="p-4">Effectively infinite; managed by the provider.</td></tr>
+                            <tr><td class="p-4 font-medium">Ease of Use</td><td class="p-4">Requires initial setup and technical knowledge.</td><td class="p-4">Extremely simple; just call an API endpoint.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <div id="page-hardware" class="page-content hidden">
+            <section class="prose max-w-none prose-stone">
+                <div class="text-center">
+                    <h1 class="text-3xl md:text-4xl font-bold text-stone-800">Hardware Deep Dive: Building Your Local AI Rig</h1>
+                    <p class="mt-4 text-lg">Understanding the hardware requirements is the most critical step in your local LLM journey. It's not just about having a "good computer"; it's about understanding how specific components interact with these massive models. This section will demystify the hardware, turning you into an informed builder or buyer.</p>
+                </div>
+                
+                <h2>The Hardware Trinity: VRAM, RAM, and Compute</h2>
+                <p>Running an LLM effectively is a balancing act between three key resources on your computer. Think of it like a chef's kitchen:</p>
+                <ul>
+                    <li><strong>VRAM (Video RAM):</strong> This is your primary workbench. It's high-speed memory located directly on your GPU. The entire model (or most of it) must be loaded into VRAM to run quickly. The bigger your workbench, the bigger and more complex the meals (models) you can prepare at once. <strong>This is the single most important bottleneck.</strong></li>
+                    <li><strong>System RAM:</strong> This is your pantry. It's slower than VRAM but much larger. It's used to store data, the operating system, and parts of the model that don't fit into VRAM. When you provide a long prompt or have a long conversation (large "context"), that context is often stored in RAM.</li>
+                    <li><strong>Compute (GPU/CPU Cores):</strong> These are your chefs. They perform the actual calculations (billions of them per second). A powerful GPU has thousands of specialized "chefs" (CUDA or ROCm cores) perfect for the parallel math LLMs require. A CPU has fewer but more versatile "chefs."</li>
+                </ul>
+
+                <h3>Deep Dive: VRAM - The King of Specs</h3>
+                <p>The amount of VRAM your GPU has directly determines the size of the model you can run efficiently. The relationship is simple: a model's file size is a good proxy for the VRAM needed to load it. For example, a 7-billion parameter model in its standard 16-bit format takes up about 14GB. To run this smoothly, you'd want a GPU with at least 16GB of VRAM.</p>
+                <ul>
+                    <li><strong>NVIDIA (Recommended):</strong> NVIDIA GPUs are the industry standard for AI due to their CUDA software ecosystem, which is mature and widely supported by nearly all AI frameworks, including Ollama. For local LLMs, the VRAM on consumer cards is the key metric.
+                        <ul>
+                            <li><strong>Entry-Level (8-12GB):</strong> RTX 3060 (12GB), RTX 4060 Ti, RTX 4070. Excellent for running smaller (3B-7B) quantized models.</li>
+                            <li><strong>Mid-Range (16GB):</strong> RTX 4070 Ti SUPER, RTX 4080/SUPER. The sweet spot for running powerful 7B/8B models and exploring 13B models.</li>
+                            <li><strong>High-End (24GB):</strong> RTX 3090, RTX 4090. The gold standard for consumers. Can handle very large models (up to ~34B quantized) and is suitable for beginner fine-tuning experiments.</li>
+                        </ul>
+                    </li>
+                    <li><strong>AMD & Apple Silicon:</strong> While NVIDIA is dominant, support for other platforms is improving.
+                        <ul>
+                            <li><strong>AMD:</strong> Support through ROCm is getting better, but can still require more configuration. High-VRAM cards like the 7900 XTX (24GB) are powerful but check for compatibility with tools like Ollama first.</li>
+                            <li><strong>Apple Silicon (M-series):</strong> These chips have a "unified memory" architecture, meaning the VRAM and system RAM are the same pool. An M2 Pro with 32GB of unified memory can use a large portion of that 32GB for the model, making them surprisingly capable machines for their size.</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h3>Deep Dive: System RAM - The Context Keeper</h3>
+                <p>While VRAM holds the model, system RAM holds everything else, including the "context window"—your conversation history. A model with a large context window (e.g., 128k tokens) can "remember" a very long conversation, but that history needs to be stored somewhere. That's RAM's job. Insufficient RAM can lead to slowdowns as the system shuffles data between RAM and your much slower SSD/HDD (this is called "swapping").</p>
+                <ul>
+                    <li><strong>16GB:</strong> The absolute minimum. You can run smaller models, but you may experience slowdowns if you run other applications simultaneously.</li>
+                    <li><strong>32GB:</strong> The recommended amount. This provides plenty of headroom for the OS, background apps, and a large context window for your LLM.</li>
+                    <li><strong>64GB and above:</strong> Ideal for power users, developers running multiple models, or those working with extremely large context windows or non-GPU (CPU-only) inference.</li>
+                </ul>
+            </section>
+            
+            <section class="mt-16">
+                 <div class="text-center not-prose">
+                    <h2 class="text-3xl md:text-4xl font-bold text-stone-800">Interactive Hardware Check</h2>
+                    <p class="mt-4 max-w-2xl mx-auto text-lg text-stone-600">Select your GPU's VRAM below to see which models are a good fit for your system. This interactive chart will help you visualize what you can run right now.</p>
+                </div>
+                <div id="vram-selector" class="mt-12 flex flex-wrap justify-center gap-4">
+                    <button data-vram="8" class="vram-btn px-6 py-3 text-lg font-semibold bg-white border-2 border-stone-300 rounded-lg shadow-sm transition-all duration-200 hover:border-orange-500 hover:shadow-md"> &lt; 8 GB (CPU/Low VRAM)</button>
+                    <button data-vram="16" class="vram-btn px-6 py-3 text-lg font-semibold bg-white border-2 border-stone-300 rounded-lg shadow-sm transition-all duration-200 hover:border-orange-500 hover:shadow-md">8-16 GB</button>
+                    <button data-vram="24" class="vram-btn px-6 py-3 text-lg font-semibold bg-white border-2 border-stone-300 rounded-lg shadow-sm transition-all duration-200 hover:border-orange-500 hover:shadow-md">16-24 GB</button>
+                    <button data-vram="Infinity" class="vram-btn px-6 py-3 text-lg font-semibold bg-white border-2 border-stone-300 rounded-lg shadow-sm transition-all duration-200 hover:border-orange-500 hover:shadow-md">24+ GB</button>
+                </div>
+
+                <div class="mt-12">
+                    <div class="chart-container">
+                        <canvas id="modelChart"></canvas>
                     </div>
                 </div>
-                <div class="flex items-start gap-6">
-                    <div class="flex-shrink-0 text-3xl font-bold text-orange-500 bg-orange-100 rounded-full h-12 w-12 flex items-center justify-center">2</div>
-                    <div class="flex-1">
-                        <h3 class="text-2xl font-semibold">Run the Ollama Container</h3>
-                        <p class="mt-2 text-stone-600">Open your terminal and run this command. It will download the Ollama image and start it. For GPU support (NVIDIA), use the second command.</p>
-                        <p class="mt-2 text-sm text-stone-500"><strong>For CPU:</strong></p>
-                        <div class="code-block mt-2">
-                            <button class="copy-button">Copy</button>
-                            <code>docker run -d -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama</code>
+            </section>
+
+            <section class="mt-16 prose max-w-none prose-stone">
+                <h2>Model Deep Dive: Choosing Your AI Brain</h2>
+                <p>The open-source community has produced an incredible variety of models, each with unique strengths. Your choice of model depends heavily on your hardware and your intended use case. Here are expanded profiles of some of the most popular and effective models available today. (Note: VRAM requirements are for quantized 4-bit versions, which offer the best balance of performance and size).</p>
+                
+                <div id="model-list" class="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8 not-prose">
+                </div>
+
+                <h3>Understanding Model Formats: GGUF and Transformers</h3>
+                <p>When you download a model, it will come in a specific format. The two most common you'll encounter are GGUF and the original Transformers format.</p>
+                <ul>
+                    <li><strong>GGUF (GPT-Generated Unified Format):</strong> This is the hero of local LLM inference. GGUF is a single-file format designed for maximum portability and efficiency. It contains the model weights and all necessary metadata. Its key feature is that it's designed to run on a variety of hardware, including CPUs and GPUs from different vendors. It's the format used by tools like Ollama, LM Studio, and Jan. For running models (inference), you almost always want to find a GGUF version.</li>
+                    <li><strong>Transformers (PyTorch/Safetensors):</strong> This is the "raw" format used by researchers and developers during model training and fine-tuning. It's not a single file but a directory containing model weights (often in `.bin` or `.safetensors` files), a configuration file, and a tokenizer. You'll need to use Python libraries like `transformers` from Hugging Face to load and interact with these models. This format is essential for development and fine-tuning but less convenient for simple chat or inference.</li>
+                </ul>
+            </section>
+        </div>
+
+        <div id="page-guide" class="page-content hidden prose max-w-none prose-stone">
+            <section>
+                <div class="text-center">
+                    <h1 class="text-3xl md:text-4xl font-bold text-stone-800">The Ultimate Setup & Usage Guide</h1>
+                    <p class="mt-4 text-lg">This is the practical, step-by-step part of the guide. We will walk through the entire process of installing the necessary software, running the AI container, downloading your first model, and interacting with it. We will use <a href="https://ollama.com" target="_blank" class="text-orange-600 font-semibold hover:underline">Ollama</a> because it is the most streamlined, powerful, and user-friendly tool for getting started.</p>
+                </div>
+                
+                <h2>Step 1: Install Docker - The Universal Engine</h2>
+                <p>Before we can do anything else, you need Docker. Docker is a containerization platform. Think of a container as a lightweight, self-contained package that includes an application and all its dependencies. This means we don't have to worry about complex installations of Python, CUDA, or other libraries on our host machine. The Ollama Docker image comes with everything pre-configured.</p>
+                <ol>
+                    <li>Go to the official Docker website: <a href="https://www.docker.com/products/docker-desktop/" target="_blank" class="text-orange-600 font-semibold hover:underline">Docker Desktop</a>.</li>
+                    <li>Download the installer for your operating system (Windows, macOS, or Linux).</li>
+                    <li>Run the installer and follow the on-screen instructions. This is typically a standard "next, next, finish" process.</li>
+                    <li><strong>Important for Windows Users:</strong> Docker on Windows requires the Windows Subsystem for Linux (WSL) 2. The Docker Desktop installer will usually prompt you to install or enable this automatically. If it doesn't, you can enable it by opening PowerShell as an administrator and running `wsl --install`.</li>
+                    <li>After installation, launch Docker Desktop. You should see a green icon in your system tray or menu bar indicating that the Docker engine is running.</li>
+                </ol>
+                
+                <h2>Step 2: Run the Ollama Docker Container</h2>
+                <p>Now that Docker is running, we can pull the Ollama image and start our container with a single command. Open your terminal (PowerShell or Command Prompt on Windows, Terminal on macOS/Linux).</p>
+                <h3>Command Breakdown</h3>
+                <p>Below are the commands. It's crucial to understand what each part does.</p>
+
+                <h4>For Systems with an NVIDIA GPU (Recommended)</h4>
+                <div class="code-block not-prose">
+                    <button class="copy-button">Copy</button>
+                    <code>docker run -d --gpus=all -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama</code>
+                </div>
+                
+                <h4>For CPU-Only or Non-NVIDIA Systems</h4>
+                <div class="code-block not-prose">
+                    <button class="copy-button">Copy</button>
+                    <code>docker run -d -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama</code>
+                </div>
+                
+                <ul>
+                    <li><code>docker run</code>: The basic command to create and start a new container.</li>
+                    <li><code>-d</code>: "Detached mode". This runs the container in the background so you can close your terminal without stopping it.</li>
+                    <li><code>--gpus=all</code>: <strong>(NVIDIA Only)</strong> This is the magic flag that gives the container access to your GPU, enabling hardware acceleration.</li>
+                    <li><code>-v ollama:/root/.ollama</code>: This creates a "volume". It maps a folder on your host machine named `ollama` to the `/root/.ollama` folder inside the container. This is critical because it's where the downloaded models are stored. Without this, you would lose all your models every time you restart the container.</li>
+                    <li><code>-p 11434:11434</code>: This "publishes" a port. It maps port 11434 on your local machine to port 11434 inside the container. This allows you to communicate with the Ollama server (e.g., from a web UI) via `localhost:11434`.</li>
+                    <li><code>--name ollama</code>: Assigns a memorable name to the container, making it easy to manage later.</li>
+                    <li><code>ollama/ollama</code>: The name of the image to use. Docker will automatically download it from Docker Hub if you don't have it locally.</li>
+                </ul>
+                <h3>Verification</h3>
+                <p>After running the command, check that the container is running successfully:</p>
+                <div class="code-block not-prose"><button class="copy-button">Copy</button><code>docker ps</code></div>
+                <p>You should see an entry for a container with the name `ollama` and a status of "Up".</p>
+                
+                <h2>Step 3: Download Your First Model</h2>
+                <p>With the server running, we now need to tell it to download a model. We do this by "executing" a command inside the running container.</p>
+                <div class="code-block not-prose">
+                     <button class="copy-button">Copy</button>
+                    <code>docker exec -it ollama ollama run llama3:8b</code>
+                </div>
+                <ul>
+                    <li><code>docker exec</code>: Command to run a process inside an existing container.</li>
+                    <li><code>-it</code>: "Interactive TTY". This connects your terminal to the container's terminal, allowing you to interact with it directly.</li>
+                    <li><code>ollama</code>: The name of the container we want to execute the command in.</li>
+                    <li><code>ollama run llama3:8b</code>: The actual command being run inside the container. This tells the Ollama server to download the `llama3` model with the `8b` (8 billion parameter) tag and then start a chat session.</li>
+                </ul>
+                <p>The first time you run this, you will see a download progress bar. This can take several minutes depending on your internet speed, as the model is several gigabytes. Once downloaded, it will be stored in the volume we created and subsequent runs will be instant.</p>
+                
+                <h2>Step 4: Interact with Your LLM</h2>
+                <p>Once the model is downloaded, you'll be dropped directly into a chat prompt in your terminal. You can start talking to it immediately!</p>
+                <blockquote>
+                    >>> Send a message (/? for help)
+                </blockquote>
+                <p>Type your message and press Enter. To exit the chat, type <code>/bye</code>. To see all available commands, type <code>/?</code>.</p>
+                
+
+                <h2>Bonus: Adding a User-Friendly Web Interface</h2>
+                <p>The terminal is powerful, but a graphical user interface (GUI) is often more convenient for conversations. We can easily connect a feature-rich web UI to our running Ollama instance. We'll use <strong>Open WebUI</strong>, a popular open-source project.</p>
+                <p>Open a <strong>new terminal window</strong> (leave the one from the previous step if it's still running) and run the following command:</p>
+                 <div class="code-block not-prose">
+                    <button class="copy-button">Copy</button>
+                    <code>docker run -d -p 3000:8080 -e OLLAMA_BASE_URL=http://127.0.0.1:11434 -v open-webui:/app/backend/data --name open-webui --restart always ghcr.io/open-webui/open-webui:main</code>
+                </div>
+                <p>This command starts another Docker container for the web UI and, crucially, uses <code>-e OLLAMA_BASE_URL=http://127.0.0.1:11434</code> to tell it where to find your running Ollama server. After a minute, open your web browser and navigate to <a href="http://localhost:3000" target="_blank" class="text-orange-600 font-semibold hover:underline">http://localhost:3000</a>. You'll be prompted to create an account, and then you can select your downloaded model and start chatting in a beautiful, modern interface.</p>
+
+                <h2>Troubleshooting Common Issues</h2>
+                <ul>
+                    <li><strong>Error: `docker: command not found`</strong><br>Docker is not installed or its path is not configured correctly. Make sure Docker Desktop is installed and running.</li>
+                    <li><strong>Error response from daemon: `could not select device driver "" with capabilities: [[gpu]]`</strong><br>The NVIDIA drivers are not installed correctly on your host machine, or the NVIDIA Container Toolkit is missing. Ensure your drivers are up to date and you have followed Docker's setup instructions for GPU access.</li>
+                    <li><strong>`Connection refused` when trying to access the web UI or API.</strong><br>Make sure the Ollama container is running (`docker ps`). Check that you mapped the ports correctly in your `docker run` command (`-p 11434:11434`).</li>
+                </ul>
+            </section>
+        </div>
+        
+        <div id="page-advanced" class="page-content hidden">
+             <section class="prose max-w-none prose-stone">
+                <div class="text-center">
+                    <h1 class="text-3xl md:text-4xl font-bold text-stone-800">Advanced Topics: Mastering the Ecosystem</h1>
+                    <p class="mt-4 text-lg">You have a model running. Now it's time to unlock its full potential. This section covers advanced concepts that will allow you to run larger models, integrate them into applications, and understand the path toward creating your own specialized AI.</p>
+                </div>
+                
+                <div class="mt-12 space-y-4 not-prose">
+                    <div class="accordion-item bg-white rounded-lg border border-stone-200 shadow-sm">
+                        <button class="accordion-header w-full flex justify-between items-center p-5 text-left text-xl font-semibold">
+                            <span>Deep Dive: Model Quantization</span>
+                            <span class="accordion-icon text-2xl font-light transform transition-transform duration-300">+</span>
+                        </button>
+                        <div class="accordion-content max-h-0 overflow-hidden transition-all duration-500 ease-in-out">
+                            <div class="p-5 pt-0 prose max-w-none prose-stone">
+                                <h3>The Magic of Making Models Smaller</h3>
+                                <p>Quantization is arguably the most important technology enabling the local LLM revolution. It is the process of reducing the numerical precision of a model's weights. Think of a model's weights as a massive collection of numbers, each with very high precision (e.g., 3.14159265359). Quantization is like rounding that number to 3.1416. You lose a tiny bit of information, but the number becomes much simpler and smaller to store and process.</p>
+                                <p>Models are typically trained using 16-bit floating-point numbers (FP16). Quantization converts these to smaller integer types, like 8-bit or 4-bit integers (INT8, INT4).</p>
+                                <h3>Benefits and Trade-offs</h3>
+                                <ul>
+                                    <li><strong>Massive Size Reduction:</strong> A 4-bit quantized model is roughly 1/4th the size of its 16-bit original. A 14GB model becomes a much more manageable 3.5GB. This is why you can run a 7B parameter model on an 8GB VRAM GPU.</li>
+                                    <li><strong>Faster Inference:</strong> Integer math is significantly faster for CPUs and GPUs than floating-point math. This results in more tokens per second and a snappier user experience.</li>
+                                    <li><strong>The Cost: Perplexity Loss.</strong> The trade-off for these benefits is a small loss in model accuracy, often measured by "perplexity." For most modern quantization methods (like the k-quants in GGUF), the quality loss for a 4-bit model is almost imperceptible for general chat and instruction-following tasks. The performance gains far outweigh the minimal accuracy drop.</li>
+                                </ul>
+                                <h3>Common Quantization Levels (GGUF k-quants)</h3>
+                                <p>When browsing models on places like Hugging Face, you'll see GGUF files with names like `Q4_K_M` or `Q5_K_S`. These denote the quantization level:</p>
+                                <ul>
+                                    <li><strong>Q4_K_M:</strong> A 4-bit quant, medium size, and well-balanced. This is the most common and recommended starting point.</li>
+                                    <li><strong>Q5_K_M:</strong> A 5-bit quant, offering slightly better quality than Q4 for a slightly larger file size. A good choice if you have the extra VRAM.</li>
+                                    <li><strong>Q8_0:</strong> An 8-bit quant. Very high quality, close to the original FP16, but double the size of a 4-bit quant.</li>
+                                    <li><strong>Q3_K_S:</strong> A 3-bit quant. Very small, but the quality loss can be noticeable. Use only when VRAM is extremely limited.</li>
+                                </ul>
+                            </div>
                         </div>
-                        <p class="mt-4 text-sm text-stone-500"><strong>For NVIDIA GPU:</strong></p>
-                         <div class="code-block mt-2">
-                            <button class="copy-button">Copy</button>
-                            <code>docker run -d --gpus=all -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama</code>
+                    </div>
+                     <div class="accordion-item bg-white rounded-lg border border-stone-200 shadow-sm">
+                        <button class="accordion-header w-full flex justify-between items-center p-5 text-left text-xl font-semibold">
+                            <span>Building Applications: Using the API</span>
+                            <span class="accordion-icon text-2xl font-light transform transition-transform duration-300">+</span>
+                        </button>
+                        <div class="accordion-content max-h-0 overflow-hidden transition-all duration-500 ease-in-out">
+                             <div class="p-5 pt-0 prose max-w-none prose-stone">
+                                 <h3>Your Local AI is a Web Server</h3>
+                                <p>Ollama exposes an OpenAI-compatible API endpoint on <code>localhost:11434</code>. This means you can programmatically interact with your local LLM just like you would with the official OpenAI API. This is incredibly powerful for building custom applications, scripts, and workflows.</p>
+                                <h3>Interacting with Python</h3>
+                                <p>Here is a simple Python script to send a prompt to your local model and stream the response. You'll need the `requests` library (`pip install requests`).</p>
+                                <div class="code-block not-prose">
+                                    <button class="copy-button">Copy</button>
+                                    <pre><code class="language-python">
+import requests
+import json
+
+api_url = "http://localhost:11434/api/generate"
+
+payload = {
+  "model": "llama3:8b",
+  "prompt": "Write a short story about a robot who discovers music.",
+  "stream": False  # Set to True to get a streaming response
+}
+
+response = requests.post(api_url, json=payload)
+
+# For non-streaming response
+if not payload["stream"]:
+    full_response = json.loads(response.text)
+    print(full_response['response'])
+
+                                    </code></pre>
+                                </div>
+                                <h3>The Path to RAG (Retrieval-Augmented Generation)</h3>
+                                <p>The API is your gateway to more advanced architectures like RAG. A RAG system connects an LLM to an external knowledge base (like your own documents). The process is:</p>
+                                <ol>
+                                    <li>A user asks a question.</li>
+                                    <li>The system searches a database of your documents to find relevant text chunks.</li>
+                                    <li>These chunks are inserted into the LLM's prompt along with the original question.</li>
+                                    <li>The LLM generates an answer based on the provided information.</li>
+                                </ol>
+                                <p>This allows the LLM to answer questions about information it was never trained on. Frameworks like <strong>LangChain</strong> and <strong>LlamaIndex</strong> are designed to simplify building these RAG applications on top of APIs like the one Ollama provides.</p>
+                            </div>
+                        </div>
+                    </div>
+                     <div class="accordion-item bg-white rounded-lg border border-stone-200 shadow-sm">
+                        <button class="accordion-header w-full flex justify-between items-center p-5 text-left text-xl font-semibold">
+                            <span>Conceptual Overview: Fine-Tuning</span>
+                            <span class="accordion-icon text-2xl font-light transform transition-transform duration-300">+</span>
+                        </button>
+                        <div class="accordion-content max-h-0 overflow-hidden transition-all duration-500 ease-in-out">
+                            <div class="p-5 pt-0 prose max-w-none prose-stone">
+                                <h3>Creating a Specialized Expert</h3>
+                                <p>Fine-tuning is the process of taking a pre-trained base model and training it further on a new, smaller, and specialized dataset. This adapts the model to a specific domain, task, or style. While running inference is relatively easy on consumer hardware, fine-tuning is computationally intensive and is the next level of local LLM mastery.</p>
+                                <h3>Why Fine-Tune?</h3>
+                                <ul>
+                                    <li><strong>Domain Expertise:</strong> Train a model on medical textbooks to create a medical knowledge assistant.</li>
+                                    <li><strong>Style Mimicry:</strong> Train a model on your past writings to create an AI that writes in your style.</li>
+                                    <li><strong>Task Specialization:</strong> Train a model on thousands of examples of text-to-SQL queries to make it a master of database interaction.</li>
+                                </ul>
+                                <h3>PEFT and LoRA: Making Fine-Tuning Accessible</h3>
+                                <p>Training all billions of a model's parameters (full fine-tuning) requires immense amounts of VRAM, often multiple high-end server GPUs. <strong>Parameter-Efficient Fine-Tuning (PEFT)</strong> techniques were developed to solve this.</p>
+                                <p>The most popular PEFT method is <strong>LoRA (Low-Rank Adaptation)</strong>. Instead of updating the original model weights, LoRA freezes them and inserts tiny, new, "adapter" layers into the model. Only these small adapters are trained. This has a dramatic effect:</p>
+                                <ul>
+                                    <li><strong>Drastically Reduced Hardware Needs:</strong> A LoRA fine-tune might only train a few million parameters instead of billions, making it possible to fine-tune 7B models on a single 24GB GPU like an RTX 4090.</li>
+                                    <li><strong>Faster Training:</strong> Training fewer parameters is much faster.</li>
+                                    <li><strong>Portable Results:</strong> The result of a LoRA tune is a small file (a few megabytes) containing only the adapter weights. This adapter can then be loaded on top of the original base model to apply the specialization.</li>
+                                </ul>
+                                <p>While the full process of preparing a dataset and running a training script (using tools like `axolotl`) is beyond the scope of this guide, understanding the concept of LoRA is key to appreciating the power and accessibility of model customization in the open-source community.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
-                 <div class="flex items-start gap-6">
-                    <div class="flex-shrink-0 text-3xl font-bold text-orange-500 bg-orange-100 rounded-full h-12 w-12 flex items-center justify-center">3</div>
-                    <div class="flex-1">
-                        <h3 class="text-2xl font-semibold">Pull a Model</h3>
-                        <p class="mt-2 text-stone-600">Now, "exec" into the running container to download a model. We'll use Llama 3 (8B) as an example. This command tells Ollama to download the model files.</p>
-                        <div class="code-block mt-2">
-                             <button class="copy-button">Copy</button>
-                            <code>docker exec -it ollama ollama run llama3</code>
-                        </div>
-                    </div>
-                </div>
-                 <div class="flex items-start gap-6">
-                    <div class="flex-shrink-0 text-3xl font-bold text-orange-500 bg-orange-100 rounded-full h-12 w-12 flex items-center justify-center">4</div>
-                    <div class="flex-1">
-                        <h3 class="text-2xl font-semibold">Chat with Your LLM!</h3>
-                        <p class="mt-2 text-stone-600">That's it! After pulling the model, you'll be dropped into a chat prompt in your terminal. You can also interact with it via an API endpoint, perfect for building applications.</p>
-                        <p class="mt-4 text-sm text-stone-500"><strong>API Example (using curl):</strong></p>
-                        <div class="code-block mt-2">
-                             <button class="copy-button">Copy</button>
-                            <code>curl http://localhost:11434/api/generate -d '{ "model": "llama3", "prompt": "Why is the sky blue?" }'</code>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
+            </section>
+        </div>
 
     </main>
     
     <footer class="mt-20 md:mt-28 border-t border-stone-200">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center text-stone-500">
-            <p>Interactive Guide created to simplify local LLM deployment.</p>
+            <p>The Ultimate Guide to Local LLMs. Built to empower individuals and developers.</p>
         </div>
     </footer>
 
@@ -134,19 +534,49 @@
 
             let selectedVram = Infinity;
             let modelChart;
+            let chartInitialized = false;
+
+            const pages = document.querySelectorAll('.page-content');
+            const navButtons = document.querySelectorAll('.nav-item');
+            const pageChangerButtons = document.querySelectorAll('.page-changer-btn');
+            
+            function showPage(pageId) {
+                pages.forEach(page => {
+                    page.classList.toggle('hidden', page.id !== `page-${pageId}`);
+                });
+                navButtons.forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.page === pageId);
+                });
+                window.scrollTo(0, 0);
+
+                if (pageId === 'hardware' && !chartInitialized) {
+                    initializeChart();
+                    document.querySelector('.vram-btn[data-vram="Infinity"]').click();
+                    chartInitialized = true;
+                }
+            }
+            
+            navButtons.forEach(btn => {
+                btn.addEventListener('click', () => showPage(btn.dataset.page));
+            });
+
+            pageChangerButtons.forEach(btn => {
+                btn.addEventListener('click', () => showPage(btn.dataset.pageTarget));
+            });
 
             const vramSelector = document.getElementById('vram-selector');
             const modelList = document.getElementById('model-list');
-            const ctx = document.getElementById('modelChart').getContext('2d');
-
+            
             function createModelCard(model) {
                 return `
                     <div class="model-card p-6 bg-white rounded-xl shadow-lg border border-stone-200 transition-opacity duration-500" data-vram="${model.vram}">
-                        <span class="inline-block px-3 py-1 text-xs font-semibold text-orange-700 bg-orange-100 rounded-full">${model.type}</span>
-                        <h3 class="mt-3 text-xl font-bold text-stone-800">${model.name}</h3>
-                        <p class="mt-2 text-stone-600">${model.description}</p>
+                        <div class="prose max-w-none prose-stone">
+                            <span class="inline-block px-3 py-1 text-xs font-semibold text-orange-700 bg-orange-100 rounded-full no-underline">${model.type}</span>
+                            <h3 class="mt-3">${model.name}</h3>
+                            <p>${model.description}</p>
+                        </div>
                         <div class="mt-4 pt-4 border-t border-stone-200 flex justify-between text-sm font-medium">
-                            <span class="text-stone-500">VRAM Required</span>
+                            <span class="text-stone-500">Min. VRAM (4-bit)</span>
                             <span class="text-stone-800">${model.vram} GB</span>
                         </div>
                         <div class="mt-2 flex justify-between text-sm font-medium">
@@ -158,125 +588,97 @@
             }
 
             function initializeChart() {
+                const ctx = document.getElementById('modelChart').getContext('2d');
                 modelChart = new Chart(ctx, {
                     type: 'bar',
-                    data: {
-                        labels: [],
-                        datasets: [{
-                            label: 'Minimum VRAM Required (GB)',
-                            data: [],
-                            backgroundColor: '#fb923c', // orange-400
-                            borderColor: '#f97316', // orange-500
-                            borderWidth: 1,
-                            borderRadius: 4
-                        }]
-                    },
+                    data: { labels: [], datasets: [{ data: [] }] },
                     options: {
                         indexAxis: 'y',
                         responsive: true,
                         maintainAspectRatio: false,
                         scales: {
-                            x: {
-                                beginAtZero: true,
-                                title: { display: true, text: 'VRAM (GB)', font: { size: 14 } },
-                                grid: { color: '#e7e5e4' } // stone-200
-                            },
-                             y: {
-                                grid: { display: false }
-                            }
+                            x: { beginAtZero: true, title: { display: true, text: 'VRAM (GB)', font: { size: 14 } }, grid: { color: '#e7e5e4' } },
+                            y: { grid: { display: false } }
                         },
                         plugins: {
                             legend: { display: false },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        return ` Requires ${context.raw} GB VRAM`;
-                                    }
-                                }
+                            tooltip: { callbacks: { label: (c) => ` Requires ~${c.raw} GB VRAM` } }
+                        },
+                        datasets: {
+                            bar: {
+                                backgroundColor: '#fb923c',
+                                borderColor: '#f97316',
+                                borderWidth: 1,
+                                borderRadius: 4
                             }
                         }
                     }
                 });
             }
 
-            function updateDisplays() {
+            function updateHardwareDisplays() {
+                if (!modelChart) return;
                 const filteredModels = modelData.filter(m => m.vram <= selectedVram);
                 
                 modelChart.data.labels = filteredModels.map(m => m.name);
                 modelChart.data.datasets[0].data = filteredModels.map(m => m.vram);
                 modelChart.update();
 
-                modelList.innerHTML = '';
-                if (filteredModels.length > 0) {
-                    filteredModels.forEach(model => {
-                        modelList.innerHTML += createModelCard(model);
-                    });
-                } else {
-                    modelList.innerHTML = `<div class="md:col-span-2 lg:col-span-3 text-center p-8 bg-white rounded-lg shadow-md border"><p class="text-lg text-stone-600">No models fit the selected VRAM. Consider choosing a larger VRAM size or a more powerful machine. The smallest models require at least 6GB of VRAM for a good experience.</p></div>`;
-                }
+                modelList.innerHTML = filteredModels.length > 0
+                    ? filteredModels.map(createModelCard).join('')
+                    : `<div class="md:col-span-2 text-center p-8 bg-white rounded-lg shadow-md border"><p class="text-lg text-stone-600">No models fit this VRAM selection. Consider a larger VRAM size. The smallest quantized models require at least 6GB of VRAM for a good experience.</p></div>`;
             }
-
-            vramSelector.addEventListener('click', (e) => {
-                if (e.target.classList.contains('vram-btn')) {
-                    selectedVram = parseFloat(e.target.dataset.vram);
-                    
-                    document.querySelectorAll('.vram-btn').forEach(btn => {
-                        btn.style.backgroundColor = 'white';
-                        btn.style.color = '#44403c'; // stone-700
-                        btn.style.borderColor = '#d6d3d1'; // stone-300
-                    });
-
-                    e.target.style.backgroundColor = '#f97316'; // orange-500
-                    e.target.style.color = 'white';
-                    e.target.style.borderColor = '#f97316';
-                    
-                    updateDisplays();
-                }
-            });
+            
+            if (vramSelector) {
+                vramSelector.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('vram-btn')) {
+                        selectedVram = parseFloat(e.target.dataset.vram);
+                        document.querySelectorAll('.vram-btn').forEach(btn => {
+                            btn.classList.remove('bg-orange-500', 'text-white', 'border-orange-500');
+                            btn.classList.add('bg-white', 'border-stone-300');
+                        });
+                        e.target.classList.add('bg-orange-500', 'text-white', 'border-orange-500');
+                        updateHardwareDisplays();
+                    }
+                });
+            }
             
             const copyButtons = document.querySelectorAll('.copy-button');
             copyButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    const code = button.nextElementSibling.textContent;
-                    navigator.clipboard.writeText(code).then(() => {
+                button.addEventListener('click', (e) => {
+                    const codeBlock = e.target.closest('.code-block');
+                    const code = codeBlock.querySelector('code').textContent;
+                    navigator.clipboard.writeText(code.trim()).then(() => {
                         button.textContent = 'Copied!';
-                        setTimeout(() => {
-                            button.textContent = 'Copy';
-                        }, 2000);
+                        setTimeout(() => { button.textContent = 'Copy'; }, 2000);
                     });
                 });
             });
 
-            const navLinks = document.querySelectorAll('.nav-item');
-            const sections = document.querySelectorAll('section');
+            document.querySelectorAll('.accordion-header').forEach(header => {
+                header.addEventListener('click', () => {
+                    const content = header.nextElementSibling;
+                    const icon = header.querySelector('.accordion-icon');
+                    
+                    document.querySelectorAll('.accordion-content').forEach(c => {
+                        if (c !== content) {
+                            c.style.maxHeight = null;
+                            c.previousElementSibling.querySelector('.accordion-icon').style.transform = 'rotate(0deg)';
+                        }
+                    });
 
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        navLinks.forEach(link => {
-                            link.classList.remove('active');
-                            if (link.getAttribute('href').substring(1) === entry.target.id) {
-                                link.classList.add('active');
-                            }
-                        });
+                    if (content.style.maxHeight) {
+                        content.style.maxHeight = null;
+                        icon.style.transform = 'rotate(0deg)';
+                    } else {
+                        content.style.maxHeight = content.scrollHeight + "px";
+                        icon.style.transform = 'rotate(45deg)';
                     }
                 });
-            }, { rootMargin: '-50% 0px -50% 0px' });
-
-            sections.forEach(section => observer.observe(section));
-
-            navLinks.forEach(link => {
-                link.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    document.querySelector(link.getAttribute('href')).scrollIntoView({
-                        behavior: 'smooth'
-                    });
-                });
             });
 
-            initializeChart();
-            document.querySelector('.vram-btn[data-vram="Infinity"]').click();
         });
     </script>
 </body>
 </html>
+
