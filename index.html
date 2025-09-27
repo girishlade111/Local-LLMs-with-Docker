@@ -5,29 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
         .copy-button {
-            position: absolute;
-            top: 0.5rem;
-            .chart-container {
-                height: 500px;
-            }
-        }
-        .nav-item {
-            cursor: pointer;
-            padding: 0.5rem 1rem;
-            border-radius: 9999px;
-            transition: all 0.3s ease;
-            font-weight: 500;
-        }
-        .nav-item.active {
-            background-color: #f97316; /* orange-500 */
-            color: white;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-        }
-        .nav-item:not(.active):hover {
-            background-color: #fde68a; /* amber-200 */
-        }
-        .page-content {
-            animation: fadeIn 0.5s ease-in-out;
         }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
