@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Run LLMs Locally with Docker: An Interactive Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Amber & Stone -->
+    <!-- Application Structure Plan: The application is designed as a top-to-bottom narrative guide. This structure was chosen to walk a user from the "why" (benefits) to the "can I?" (hardware check), "what should I use?" (model selection), and finally the "how?" (setup guide). This logical flow is more user-friendly for a procedural topic than a dashboard, as it sequentially builds the user's knowledge and confidence. Key interactions include a hardware VRAM filter that personalizes the model recommendations, making the guide immediately relevant and actionable for the user. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: Benefits of Local LLMs -> Goal: Inform -> Viz: Icon-based feature grid (HTML/Tailwind) -> Interaction: None -> Justification: Quickly communicates core advantages in a scannable format.
+        - Report Info: Hardware VRAM Requirements -> Goal: Compare/Personalize -> Viz: Interactive buttons & Horizontal Bar Chart (Chart.js) -> Interaction: User clicks VRAM buttons to filter the chart and model list -> Justification: Transforms a static requirement list into a personalized tool, directly answering "What models can my computer run?".
+        - Report Info: Setup Process -> Goal: Organize/Instruct -> Viz: Numbered step-by-step guide with code blocks (HTML/Tailwind) -> Interaction: "Copy to Clipboard" buttons for code snippets -> Justification: Simplifies a technical procedure into clear, actionable steps, reducing user friction.
+        - Library/Method: Chart.js for the bar chart due to its simplicity and canvas rendering. All other visuals are built with HTML and Tailwind. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fefce8; /* amber-50 */
+            color: #44403c; /* stone-700 */
+        }
+        .code-block {
+            background-color: #1c1917; /* stone-900 */
+            color: #f5f5f4; /* stone-100 */
+            border-radius: 0.5rem;
+            padding: 1rem;
+            font-family: monospace;
+            position: relative;
+        }
+        .copy-button {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background-color: #a8a29e; /* stone-400 */
+            color: #1c1917; /* stone-900 */
+            border: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: background-color 0.2s;
+        }
+        .copy-button:hover {
+            background-color: #78716c; /* stone-500 */
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 400px;
+            max-height: 60vh;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 500px;
+            }
+        }
+        .nav-item {
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        .nav-item.active {
+            background-color: #f97316; /* orange-500 */
+            color: white;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .nav-item:not(.active):hover {
+            background-color: #fde68a; /* amber-200 */
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="sticky top-0 z-50 bg-amber-50/80 backdrop-blur-lg border-b border-amber-200">
+        <nav class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <ul class="flex items-center justify-center space-x-2 md:space-x-4 text-sm md:text-base">
+                <li><a href="#intro" class="nav-item active">Intro</a></li>
+                <li><a href="#why" class="nav-item">Why Local?</a></li>
+                <li><a href="#hardware" class="nav-item">Hardware</a></li>
+                <li><a href="#models" class="nav-item">Models</a></li>
+                <li><a href="#guide" class="nav-item">Guide</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
+        
+        <section id="intro" class="text-center scroll-mt-20">
+            <span class="inline-block px-4 py-1 text-sm font-semibold tracking-wider text-orange-700 bg-orange-100 rounded-full">Interactive Guide</span>
+            <h1 class="mt-4 text-4xl md:text-6xl font-bold tracking-tight text-stone-800">Run LLMs Locally with Docker</h1>
+            <p class="mt-6 max-w-3xl mx-auto text-lg md:text-xl text-stone-600">Unlock the power of Large Language Models on your own machine. This guide provides an interactive walkthrough for setting up and running open-source AI models using Docker, ensuring privacy, speed, and full control.</p>
+        </section>
+
+        <section id="why" class="mt-20 md:mt-28 scroll-mt-20">
+            <div class="text-center">
+                <h2 class="text-3xl md:text-4xl font-bold text-stone-800">Why Run an LLM Locally?</h2>
+                <p class="mt-4 max-w-2xl mx-auto text-lg text-stone-600">Moving beyond cloud-based services offers significant advantages. Explore the key benefits of having a powerful AI right on your desktop.</p>
+            </div>
+            <div class="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="p-6 bg-white rounded-xl shadow-lg border border-stone-200">
+                    <div class="text-4xl">🔒</div>
+                    <h3 class="mt-4 text-xl font-semibold">Total Privacy</h3>
+                    <p class="mt-2 text-stone-600">Your data and prompts never leave your machine. Perfect for sensitive information and confidential work.</p>
+                </div>
+                <div class="p-6 bg-white rounded-xl shadow-lg border border-stone-200">
+                     <div class="text-4xl">💰</div>
+                    <h3 class="mt-4 text-xl font-semibold">No Subscriptions</h3>
+                    <p class="mt-2 text-stone-600">Avoid recurring fees and API costs. Run models as much as you want after the initial setup.</p>
+                </div>
+                <div class="p-6 bg-white rounded-xl shadow-lg border border-stone-200">
+                     <div class="text-4xl">🔌</div>
+                    <h3 class="mt-4 text-xl font-semibold">Offline Access</h3>
+                    <p class="mt-2 text-stone-600">Your AI assistant works without an internet connection, ensuring constant availability.</p>
+                </div>
+                 <div class="p-6 bg-white rounded-xl shadow-lg border border-stone-200">
+                     <div class="text-4xl">🛠️</div>
+                    <h3 class="mt-4 text-xl font-semibold">Deep Customization</h3>
+                    <p class="mt-2 text-stone-600">Fine-tune models with your own data and experiment with different configurations and parameters freely.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="hardware" class="mt-20 md:mt-28 scroll-mt-20">
+             <div class="text-center">
+                <h2 class="text-3xl md:text-4xl font-bold text-stone-800">Hardware Check: What Can You Run?</h2>
+                <p class="mt-4 max-w-2xl mx-auto text-lg text-stone-600">The most important factor for running LLMs is your GPU's Video RAM (VRAM). Select your available VRAM below to see which models are a good fit for your system. If you don't have a dedicated GPU, select "&lt; 8 GB" to see CPU-compatible models.</p>
+            </div>
+            <div id="vram-selector" class="mt-12 flex flex-wrap justify-center gap-4">
+                <button data-vram="8" class="vram-btn px-6 py-3 text-lg font-semibold bg-white border-2 border-stone-300 rounded-lg shadow-sm transition-all duration-200 hover:border-orange-500 hover:shadow-md"> &lt; 8 GB</button>
+                <button data-vram="16" class="vram-btn px-6 py-3 text-lg font-semibold bg-white border-2 border-stone-300 rounded-lg shadow-sm transition-all duration-200 hover:border-orange-500 hover:shadow-md">8-16 GB</button>
+                <button data-vram="24" class="vram-btn px-6 py-3 text-lg font-semibold bg-white border-2 border-stone-300 rounded-lg shadow-sm transition-all duration-200 hover:border-orange-500 hover:shadow-md">16-24 GB</button>
+                <button data-vram="Infinity" class="vram-btn px-6 py-3 text-lg font-semibold bg-white border-2 border-stone-300 rounded-lg shadow-sm transition-all duration-200 hover:border-orange-500 hover:shadow-md">24+ GB</button>
+            </div>
+        </section>
+        
+        <section id="models" class="mt-20 md:mt-28 scroll-mt-20">
+             <div class="text-center">
+                <h2 class="text-3xl md:text-4xl font-bold text-stone-800">Choose Your Model</h2>
+                <p class="mt-4 max-w-2xl mx-auto text-lg text-stone-600">Based on your hardware, here are some popular open-source models. The chart shows the minimum VRAM required for a smooth experience. Smaller models are faster and great for general tasks, while larger models offer more powerful reasoning.</p>
+            </div>
+            <div class="mt-12">
+                <div class="chart-container">
+                    <canvas id="modelChart"></canvas>
+                </div>
+            </div>
+            <div id="model-list" class="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            </div>
+        </section>
+
+        <section id="guide" class="mt-20 md:mt-28 scroll-mt-20">
+            <div class="text-center">
+                <h2 class="text-3xl md:text-4xl font-bold text-stone-800">The 4-Step Setup Guide</h2>
+                <p class="mt-4 max-w-2xl mx-auto text-lg text-stone-600">We'll use <a href="https://ollama.com" target="_blank" class="text-orange-600 font-semibold hover:underline">Ollama</a>, a fantastic tool that simplifies running LLMs. It packages everything you need into a single Docker container.</p>
+            </div>
+            <div class="mt-12 max-w-4xl mx-auto space-y-12">
+                <div class="flex items-start gap-6">
+                    <div class="flex-shrink-0 text-3xl font-bold text-orange-500 bg-orange-100 rounded-full h-12 w-12 flex items-center justify-center">1</div>
+                    <div class="flex-1">
+                        <h3 class="text-2xl font-semibold">Install Docker</h3>
+                        <p class="mt-2 text-stone-600">If you don't have it already, download and install Docker Desktop for your operating system. It provides the containerization engine needed to run Ollama.</p>
+                        <a href="https://www.docker.com/products/docker-desktop/" target="_blank" class="inline-block mt-3 px-4 py-2 text-white bg-orange-500 rounded-lg font-semibold hover:bg-orange-600 transition-colors">Get Docker Desktop →</a>
+                    </div>
+                </div>
+                <div class="flex items-start gap-6">
+                    <div class="flex-shrink-0 text-3xl font-bold text-orange-500 bg-orange-100 rounded-full h-12 w-12 flex items-center justify-center">2</div>
+                    <div class="flex-1">
+                        <h3 class="text-2xl font-semibold">Run the Ollama Container</h3>
+                        <p class="mt-2 text-stone-600">Open your terminal and run this command. It will download the Ollama image and start it. For GPU support (NVIDIA), use the second command.</p>
+                        <p class="mt-2 text-sm text-stone-500"><strong>For CPU:</strong></p>
+                        <div class="code-block mt-2">
+                            <button class="copy-button">Copy</button>
+                            <code>docker run -d -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama</code>
+                        </div>
+                        <p class="mt-4 text-sm text-stone-500"><strong>For NVIDIA GPU:</strong></p>
+                         <div class="code-block mt-2">
+                            <button class="copy-button">Copy</button>
+                            <code>docker run -d --gpus=all -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama</code>
+                        </div>
+                    </div>
+                </div>
+                 <div class="flex items-start gap-6">
+                    <div class="flex-shrink-0 text-3xl font-bold text-orange-500 bg-orange-100 rounded-full h-12 w-12 flex items-center justify-center">3</div>
+                    <div class="flex-1">
+                        <h3 class="text-2xl font-semibold">Pull a Model</h3>
+                        <p class="mt-2 text-stone-600">Now, "exec" into the running container to download a model. We'll use Llama 3 (8B) as an example. This command tells Ollama to download the model files.</p>
+                        <div class="code-block mt-2">
+                             <button class="copy-button">Copy</button>
+                            <code>docker exec -it ollama ollama run llama3</code>
+                        </div>
+                    </div>
+                </div>
+                 <div class="flex items-start gap-6">
+                    <div class="flex-shrink-0 text-3xl font-bold text-orange-500 bg-orange-100 rounded-full h-12 w-12 flex items-center justify-center">4</div>
+                    <div class="flex-1">
+                        <h3 class="text-2xl font-semibold">Chat with Your LLM!</h3>
+                        <p class="mt-2 text-stone-600">That's it! After pulling the model, you'll be dropped into a chat prompt in your terminal. You can also interact with it via an API endpoint, perfect for building applications.</p>
+                        <p class="mt-4 text-sm text-stone-500"><strong>API Example (using curl):</strong></p>
+                        <div class="code-block mt-2">
+                             <button class="copy-button">Copy</button>
+                            <code>curl http://localhost:11434/api/generate -d '{ "model": "llama3", "prompt": "Why is the sky blue?" }'</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+    
+    <footer class="mt-20 md:mt-28 border-t border-stone-200">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center text-stone-500">
+            <p>Interactive Guide created to simplify local LLM deployment.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const modelData = [
+                { name: 'Phi-3 Mini (3.8B)', vram: 6, size: '4.2 GB', type: 'Fast & Compact', description: 'Excellent for on-device chat and simple tasks. Very fast response times.' },
+                { name: 'Mistral (7B)', vram: 8, size: '4.1 GB', type: 'Balanced Performer', description: 'A highly popular model known for its strong performance in coding and reasoning for its size.' },
+                { name: 'Llama 3 (8B)', vram: 8, size: '4.7 GB', type: 'State-of-the-Art Small', description: 'Meta\'s latest small model. Great at following instructions and creative writing.' },
+                { name: 'Gemma (9B)', vram: 10, size: '5.2 GB', type: 'Google\'s Open Model', description: 'A strong all-around model from Google, good for general purpose tasks.' },
+                { name: 'Mixtral 8x7B (47B)', vram: 22, size: '26 GB', type: 'Mixture of Experts', description: 'Blazing fast for its size due to its architecture. Top-tier performance.' },
+                { name: 'Llama 3 (70B)', vram: 40, size: '40 GB', type: 'Reasoning Powerhouse', description: 'A massive model capable of complex, nuanced reasoning and in-depth analysis.' }
+            ];
+
+            let selectedVram = Infinity;
+            let modelChart;
+
+            const vramSelector = document.getElementById('vram-selector');
+            const modelList = document.getElementById('model-list');
+            const ctx = document.getElementById('modelChart').getContext('2d');
+
+            function createModelCard(model) {
+                return `
+                    <div class="model-card p-6 bg-white rounded-xl shadow-lg border border-stone-200 transition-opacity duration-500" data-vram="${model.vram}">
+                        <span class="inline-block px-3 py-1 text-xs font-semibold text-orange-700 bg-orange-100 rounded-full">${model.type}</span>
+                        <h3 class="mt-3 text-xl font-bold text-stone-800">${model.name}</h3>
+                        <p class="mt-2 text-stone-600">${model.description}</p>
+                        <div class="mt-4 pt-4 border-t border-stone-200 flex justify-between text-sm font-medium">
+                            <span class="text-stone-500">VRAM Required</span>
+                            <span class="text-stone-800">${model.vram} GB</span>
+                        </div>
+                        <div class="mt-2 flex justify-between text-sm font-medium">
+                            <span class="text-stone-500">Download Size</span>
+                            <span class="text-stone-800">${model.size}</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function initializeChart() {
+                modelChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Minimum VRAM Required (GB)',
+                            data: [],
+                            backgroundColor: '#fb923c', // orange-400
+                            borderColor: '#f97316', // orange-500
+                            borderWidth: 1,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                title: { display: true, text: 'VRAM (GB)', font: { size: 14 } },
+                                grid: { color: '#e7e5e4' } // stone-200
+                            },
+                             y: {
+                                grid: { display: false }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return ` Requires ${context.raw} GB VRAM`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            function updateDisplays() {
+                const filteredModels = modelData.filter(m => m.vram <= selectedVram);
+                
+                modelChart.data.labels = filteredModels.map(m => m.name);
+                modelChart.data.datasets[0].data = filteredModels.map(m => m.vram);
+                modelChart.update();
+
+                modelList.innerHTML = '';
+                if (filteredModels.length > 0) {
+                    filteredModels.forEach(model => {
+                        modelList.innerHTML += createModelCard(model);
+                    });
+                } else {
+                    modelList.innerHTML = `<div class="md:col-span-2 lg:col-span-3 text-center p-8 bg-white rounded-lg shadow-md border"><p class="text-lg text-stone-600">No models fit the selected VRAM. Consider choosing a larger VRAM size or a more powerful machine. The smallest models require at least 6GB of VRAM for a good experience.</p></div>`;
+                }
+            }
+
+            vramSelector.addEventListener('click', (e) => {
+                if (e.target.classList.contains('vram-btn')) {
+                    selectedVram = parseFloat(e.target.dataset.vram);
+                    
+                    document.querySelectorAll('.vram-btn').forEach(btn => {
+                        btn.style.backgroundColor = 'white';
+                        btn.style.color = '#44403c'; // stone-700
+                        btn.style.borderColor = '#d6d3d1'; // stone-300
+                    });
+
+                    e.target.style.backgroundColor = '#f97316'; // orange-500
+                    e.target.style.color = 'white';
+                    e.target.style.borderColor = '#f97316';
+                    
+                    updateDisplays();
+                }
+            });
+            
+            const copyButtons = document.querySelectorAll('.copy-button');
+            copyButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const code = button.nextElementSibling.textContent;
+                    navigator.clipboard.writeText(code).then(() => {
+                        button.textContent = 'Copied!';
+                        setTimeout(() => {
+                            button.textContent = 'Copy';
+                        }, 2000);
+                    });
+                });
+            });
+
+            const navLinks = document.querySelectorAll('.nav-item');
+            const sections = document.querySelectorAll('section');
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        navLinks.forEach(link => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href').substring(1) === entry.target.id) {
+                                link.classList.add('active');
+                            }
+                        });
+                    }
+                });
+            }, { rootMargin: '-50% 0px -50% 0px' });
+
+            sections.forEach(section => observer.observe(section));
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    document.querySelector(link.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+
+            initializeChart();
+            document.querySelector('.vram-btn[data-vram="Infinity"]').click();
+        });
+    </script>
+</body>
+</html>
